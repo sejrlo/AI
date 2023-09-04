@@ -43,7 +43,21 @@ class neural_network():
             print("desired output", desired_outputs[i])
 
     def backprop(self, layers, desired_ouputs):
-        pass
+        changes_to_weights = []
+        for weights in self.weights:
+            changes_to_weights.append(weights*0)
+
+        changes_to_biasis = []
+        for bias in self.biasis:
+            changes_to_biasis.append(bias*0)
+
+        for i in range(len(changes_to_weights)-1,-1):
+            changes_to_weights[i] = layers[i]
+
+
+
+
+        
 
     def train(self, data, desired_outputs):
         if len(data) != len(desired_outputs): raise Exception("length of data must be equal to the length of desired_outputs")
@@ -51,7 +65,11 @@ class neural_network():
         changes_to_weights = []
         for weights in self.weights:
             changes_to_weights.append(weights*0)
-        changes_to_biasis = np.array([0]*len(self.biasis))
+
+        changes_to_biasis = []
+        for bias in self.biasis:
+            changes_to_biasis.append(bias*0)
+
         for i in range(len(data)):
             layers = self.test(data[i], True)
             weights, biasis = self.backprop(layers, desired_outputs[i])
