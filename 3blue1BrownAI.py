@@ -43,7 +43,7 @@ class neural_network():
             print("desired output", desired_outputs[i])
 
     def backprop(self, layers, desired_ouputs):
-        
+        pass
 
     def train(self, data, desired_outputs):
         if len(data) != len(desired_outputs): raise Exception("length of data must be equal to the length of desired_outputs")
