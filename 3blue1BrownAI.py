@@ -66,9 +66,9 @@ class neural_network():
             #[5,6,7,9] * sigmoid'([5,6,7,3] * [0.5, 0.3, 0.7, 0.3] + [3,6,2,9]) * [3,6,1]
             #[2,3,6,1]            [2,3,6,5]
             
-            changes_to_weights[i] = layers[i-1]*self.dif_sigmoid(self.weights[i]*layers[i-1] + self.biasis[i])*change_to_neurons[i]
-            changes_to_biasis[i] = self.dif_sigmoid(self.weights[i]*layers[i-1] + self.biasis[i])*change_to_neurons[i]
-        
+            changes_to_weights[i] = np.outer(self.dif_sigmoid(np.dot(layers[i], self.weights[i+1]) + self.biasis[i+1]) * change_to_neurons[i+1], weights[i+1])
+            changes_to_biasis[i] = np.dot(self.dif_sigmoid(np.dot(layers[i-1], self.weights[i]) + self.biasis[i]), change_to_neurons[i])
+
         return changes_to_weights, changes_to_biasis
 
     def train(self, data, desired_outputs):
@@ -122,7 +122,7 @@ nn = neural_network(1,["0","1"],[3,3], 100000)
 data = []
 desired_outputs = []
 
-for i in range(100000):
+for i in range(2):
     data.append([i%2])
     desired_outputs.append([(i+1)%2,i%2])
 
