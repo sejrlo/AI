@@ -60,8 +60,12 @@ class neural_network():
             if i == len(layers)-1:
                 change_to_neurons[i] = 2*(layers[i]-desired_ouputs)
             else:
-                change_to_neurons[i] = weights[i+1] * self.dif_sigmoid(self.weights[i+1]*layers[i] + self.biasis[i+1]) * change_to_neurons[i+1]
+                change_to_neurons[i] = np.dot(self.dif_sigmoid(np.dot(layers[i], self.weights[i+1]) + self.biasis[i+1]) * change_to_neurons[i+1], weights[i+1])
 
+            #[3,4,5,6]            [3,4,5,8]            
+            #[5,6,7,9] * sigmoid'([5,6,7,3] * [0.5, 0.3, 0.7, 0.3] + [3,6,2,9]) * [3,6,1]
+            #[2,3,6,1]            [2,3,6,5]
+            
             changes_to_weights[i] = layers[i-1]*self.dif_sigmoid(self.weights[i]*layers[i-1] + self.biasis[i])*change_to_neurons[i]
             changes_to_biasis[i] = self.dif_sigmoid(self.weights[i]*layers[i-1] + self.biasis[i])*change_to_neurons[i]
         
