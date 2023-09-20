@@ -139,7 +139,6 @@ class Board():
                 if i == last_space_index or last_space_index is None or self.children[last_space_index].resolved != "not":
                     child.check_if_clicked(mouse_pos)
         
-    
 board = Board(boardstart, _space_size, "black", has_children=True, is_clickable=False)
 
 
@@ -168,12 +167,6 @@ while running:
             #draw O
             pg.draw.circle(screen, "purple", (65, 65), 35, width=1)
 
-        
-        
-    
-        
-
-        
         if mouse.get_pressed()[0]: 
             if not mouseDown:  
                 mouseDown = True
@@ -181,8 +174,6 @@ while running:
                 board.check_if_clicked(mouse_pos)
         else: 
             mouseDown = False
-
-
 
         # flip() the display to put your work on screen
         pg.display.flip()
