@@ -3,6 +3,7 @@ import matplotlib
 import nnfs 
 from nnfs.datasets import spiral_data
 from random import randint
+# https://towardsdatascience.com/how-to-teach-an-ai-to-play-games-deep-reinforcement-learning-28f9b920440a
 
 class Layer_Dense():
     def __init__(self, n_inputs, n_neurons):

@@ -1,5 +1,6 @@
 import pygame as pg
 from pygame import mouse
+from random import choice as choose
 
 
 # pygame setup
@@ -16,7 +17,7 @@ mouseDown = False
 boardstart = (310,32)
 _space_size = 220
 
-turn = "X"
+turn = choose(["X", "O"])
 
 last_space_index = None
 
@@ -41,13 +42,13 @@ class Board():
             for y in range(3):
                 pg.draw.rect(screen, self.color, (self.boardstart[0] + x*self.space_size, self.boardstart[1] + y*self.space_size, self.space_size, self.space_size), width=1)
                 if self.spaces[3*x+y] == "X":
-                    pg.draw.line(screen, self.color, (self.boardstart[0] + x*self.space_size + 5, self.boardstart[1] + y*self.space_size + 5), 
+                    pg.draw.line(screen, "purple", (self.boardstart[0] + x*self.space_size + 5, self.boardstart[1] + y*self.space_size + 5), 
                                  (self.boardstart[0] + x*self.space_size - 5 + self.space_size, self.boardstart[1] + y*self.space_size - 5 + self.space_size))
-                    pg.draw.line(screen, self.color, (self.boardstart[0] + x*self.space_size + 5, self.boardstart[1] + y*self.space_size - 5 + self.space_size), 
+                    pg.draw.line(screen, "purple", (self.boardstart[0] + x*self.space_size + 5, self.boardstart[1] + y*self.space_size - 5 + self.space_size), 
                                  (self.boardstart[0] + x*self.space_size - 5 + self.space_size, self.boardstart[1] + y*self.space_size + 5))
 
                 elif self.spaces[3*x+y] == "O":
-                    pg.draw.circle(screen, self.color, 
+                    pg.draw.circle(screen, "purple", 
                                    ((self.boardstart[0] + x*self.space_size - 5 + self.space_size - (self.boardstart[0] + x*self.space_size + 5))/2
                                     + self.boardstart[0] + x*self.space_size + 5, 
                                     (self.boardstart[1] + y*self.space_size - 5 + self.space_size - (self.boardstart[1] + y*self.space_size + 5))/2 
