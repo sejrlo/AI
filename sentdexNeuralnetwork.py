@@ -43,6 +43,7 @@ class Activation_Softmax():
         self.dinputs = np.empty_like(dvalues)
         for index, (single_output, single_dvalues) in enumerate(zip(self.output, dvalues)):
             single_output = single_output.reshape(-1,1)
+
             jacobian_matrix = np.diagflat(single_output) - np.dot(single_output, single_output.T)
 
             self.dinputs[index] = np.dot(jacobian_matrix, single_dvalues)
@@ -78,6 +79,29 @@ class Loss_CategoricalCrossentropy(Loss):
 
         #print("dv", dvalues[:5])
         self.dinputs = -y_true / dvalues
+        self.dinputs = self.dinputs / samples
+        return self.dinputs
+
+class Activation_Softmax_Loss_CategoricalCrossentropy():
+    def __init__(self):
+        self.activation = Activation_Softmax()
+        self.loss = Loss_CategoricalCrossentropy()
+
+    def forward(self, inputs):
+        self.activation.forward(inputs)
+        self.output = self.activation.output
+
+    def calculate(self, outputs, y_true):
+        return self.loss.calculate(outputs, y_true)
+
+    def backward(self, dvalues, y_true):
+        samples = len(dvalues)
+
+        if len(y_true.shape) == 2:
+            y_true = np.argmax(y_true, axis=1)
+        
+        self.dinputs = dvalues.copy()
+        self.dinputs[range(samples), y_true] -= 1
         self.dinputs = self.dinputs / samples
         return self.dinputs
 
@@ -269,20 +293,37 @@ class Optimizer_SGD:
         else:
             return f"Lr: {self.learning_rate}\nCur_Lr: {self.current_learning_rate}\nDecay: {self.decay}\nIterations: {self.iterations}\nMomentum: {self.momentum}"
 
+combined_activation_loss_functions = [
+    {"loss":Loss_CategoricalCrossentropy, "activation": Activation_Softmax, "combined":Activation_Softmax_Loss_CategoricalCrossentropy}
+    ]
+
 class Neural_Network():
-    def __init__(self, inputs, hiddenlayers, outputs, loss_function, optimizer):
+    def __init__(self, inputs, hiddenlayers, outputs, activation_function, loss_function, optimizer, last_layer_activation_function=None):
         self.inputs = inputs
         self.outputs = outputs
-        self.loss_function = loss_function
+
+        if last_layer_activation_function is None: last_layer_activation_function = activation_function
+        #check if last activation function and loss function can be combined
+        for combination  in combined_activation_loss_functions:
+            if combination["loss"] == loss_function and combination["activation"] == last_layer_activation_function:
+                self.combined_loss_and_activation_function = combination["combined"]()
+                break
+        else:
+            self.loss_function = loss_function()
+        
         self.optimizer = optimizer
-        if len(hiddenlayers) == 0: self.layers = [Layer_Dense(inputs, len(outputs)), Activation_ReLU()] 
+
+        if len(hiddenlayers) == 0: self.layers = [Layer_Dense(inputs, len(outputs)), activation_function()] 
         else:
             self.layers = [Layer_Dense(inputs, hiddenlayers[0]), Activation_ReLU()]
 
             for i in range(1, len(hiddenlayers)):
                 self.layers.extend([Layer_Dense(hiddenlayers[i-1], hiddenlayers[i]), Activation_ReLU()])
-            
-            self.layers.extend([Layer_Dense(hiddenlayers[-1],len(outputs)), Activation_Softmax()])
+
+            if hasattr(self, "combined_loss_and_activation_function"):
+                self.layers.extend([Layer_Dense(hiddenlayers[-1], len(outputs)), self.combined_loss_and_activation_function])
+            else:
+                self.layers.extend([Layer_Dense(hiddenlayers[-1], len(outputs)), last_layer_activation_function()])
 
     def run(self, input):
         self.layers[0].forward(input)
@@ -299,7 +340,7 @@ class Neural_Network():
 
 
         print(outputs[:5])
-        print("loss:", self.loss_function.calculate(outputs, targets))
+        print("loss:", self.calculate_loss(outputs, targets))
         print("acc:", accuracy)
     
     def train(self, input, targets, print_data=False, epoch=None):
@@ -307,15 +348,16 @@ class Neural_Network():
         if print_data:
             predictions = np.argmax(outputs, axis=1)
             accuracy = np.mean(predictions == targets)
-            loss = self.loss_function.calculate(outputs, targets)
+            loss = self.calculate_loss(outputs, targets)
             if not epoch is None:
-                if epoch >= 5000:
-                    print(outputs)
                 print(f"epoch: {epoch}, acc: {accuracy:.3f}, loss: {loss:.3f}, lr: {self.optimizer.current_learning_rate}")
             else:
                 print(f"acc: {accuracy:.3f}, loss: {loss:.3f}, lr: {self.optimizer.current_learning_rate}")
-        output_gradient = self.loss_function.backward(outputs, targets)
+        if hasattr(self, "loss_function"): output_gradient = self.loss_function.backward(outputs, targets)
+        else: output_gradient = self.combined_loss_and_activation_function.backward(outputs, targets)
         for layer in reversed(self.layers):
+            if isinstance(layer, Activation_Softmax_Loss_CategoricalCrossentropy):
+                continue
             output_gradient = layer.backward(output_gradient)
             output_gradient = layer.dinputs
         
@@ -323,7 +365,13 @@ class Neural_Network():
         for layer in self.layers:
             if hasattr(layer, "weights"): layers_to_optimize.append(layer)
         self.optimizer.optimize(layers_to_optimize)
-        
+
+    def calculate_loss(self, outputs, targets):
+        if hasattr(self, "combined_loss_and_activation_function"):
+            return self.combined_loss_and_activation_function.calculate(outputs, targets)
+        else:
+            return self.loss_function.calculate(outputs, targets)
+    
 nnfs.init()
 
 X, y = spiral_data(samples=100, classes=3)
@@ -359,7 +407,8 @@ for i in range(epochs):
 
     
 
-nn = Neural_Network(2, [64], ["0", "1", "2"], Loss_CategoricalCrossentropy(), Optimizer_Adam(learning_rate=0.005, decay=5e-7))
+nn = Neural_Network(2, [64], ["0", "1", "2"], Activation_ReLU, Loss_CategoricalCrossentropy, 
+                    Optimizer_Adam(learning_rate=0.05, decay=5e-7), last_layer_activation_function=Activation_Softmax)
 print(nn.optimizer)
 nn.test(np.array(X), np.array(y))
 
@@ -369,4 +418,6 @@ for epoch, (batch, y_true_batch) in enumerate(zip(training_data, y_true_data)):
     else:
         nn.train(X, y)
 
-nn.test(np.array(X), np.array(y))
+X_test, y_test = spiral_data(samples=100, classes=3)
+
+nn.test(np.array(X_test), np.array(y_test))
