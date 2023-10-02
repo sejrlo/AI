@@ -6,9 +6,16 @@ from random import randint
 # https://towardsdatascience.com/how-to-teach-an-ai-to-play-games-deep-reinforcement-learning-28f9b920440a
 
 class Layer_Dense():
-    def __init__(self, n_inputs, n_neurons):
+    def __init__(self, n_inputs, n_neurons, weight_regularizer_l1=0, weight_regularizer_l2=0,
+                bias_regularizer_l1=0, bias_regularizer_l2=0):
         self.weights = 0.01 * np.random.randn(n_inputs, n_neurons)
         self.biases = np.zeros((1, n_neurons))
+
+        self.weight_regularizer_l1 = weight_regularizer_l1
+        self.weight_regularizer_l2 = weight_regularizer_l2
+        self.bias_regularizer_l1 = bias_regularizer_l1
+        self.bias_regularizer_l2 = bias_regularizer_l2
+
  
 
     def forward(self, inputs):
@@ -20,6 +27,26 @@ class Layer_Dense():
         self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
 
         self.dinputs = np.dot(dvalues, self.weights.T)
+        
+        # L1 on weights
+        if self.weight_regularizer_l1 > 0:
+            dL1 = np.ones_like(self.weights)
+            dL1[self.weights < 0] = -1
+            self.dweights += self.weight_regularizer_l1 * dL1
+
+        # L2 on weights
+        if self.weight_regularizer_l2 > 0:
+            self.dweights += 2 * self.weight_regularizer_l2 * self.weights
+
+        # L1 on biases
+        if self.bias_regularizer_l1 > 0:
+            dL1 = np.ones_like(self.biases)
+            dL1[self.biases < 0] = -1
+            self.dbiases += self.biases_regularizer_l1 * dL1
+
+        # L2 on biases
+        if self.weight_regularizer_l2 > 0:
+            self.dweights += 2 * self.weight_regularizer_l2 * self.weights
      
     def __str__(self):
         return f"Weights: {self.weights}\nBiases: {self.biases}"
@@ -49,11 +76,31 @@ class Activation_Softmax():
             self.dinputs[index] = np.dot(jacobian_matrix, single_dvalues)
         
 class Loss:
-    def calculate(self, output, y):
+    def calculate(self, output, y, layers):
         sample_losses = self.forward(output, y)
         data_loss = np.mean(sample_losses)
 
+        for layer in layers:
+            self.regularization_loss(layer)
+
         return data_loss
+
+    def regularization_loss(self, layer):
+        regularization_loss = 0
+
+        if layer.weight_regularizer_l1 > 0:
+            regularization_loss += layer.weight_regularizer_l1 * np.sum(np.abs(layer.weights))
+
+        if layer.weight_regularizer_l2 > 0:
+            regularization_loss += layer.weight_regularizer_l2 * np.sum(layer.weights * layer.weights)
+
+        if layer.bias_regularizer_l1 > 0:
+            regularization_loss += layer.bias_regularizer_l1 * np.sum(np.abs(layer.biases))
+
+        if layer.bias_regularizer_l2 > 0:
+            regularization_loss += layer.bias_regularizer_l2 * np.sum(layer.biases * layer.biases)
+        
+        return regularization_loss
 
 class Loss_CategoricalCrossentropy(Loss):
     def forward(self, y_pred, y_true):
@@ -91,8 +138,8 @@ class Activation_Softmax_Loss_CategoricalCrossentropy():
         self.activation.forward(inputs)
         self.output = self.activation.output
 
-    def calculate(self, outputs, y_true):
-        return self.loss.calculate(outputs, y_true)
+    def calculate(self, outputs, y_true, layers):
+        return self.loss.calculate(outputs, y_true, layers)
 
     def backward(self, dvalues, y_true):
         samples = len(dvalues)
