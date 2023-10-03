@@ -1,10 +1,13 @@
+import nnfs
+from nnfs.datasets import sine_data
 from sentdexNeuralnetwork import *
-import numpy as np
+import matplotlib.pyplot as plt
+
+
+X, y = sine_data()
 
 nnfs.init()
 
-X, y = spiral_data(samples=100, classes=2)
-y = y.reshape(-1,1)
 y_true_data = []
 training_data = []
 batch_size = 8
@@ -14,31 +17,34 @@ for i in range(epochs):
     training_data.append(np.array(X))
     y_true_data.append(np.array(y))
 
-    
-
 nn = Neural_Network(
     [
-    Layer_Dense(2, 64, weight_regularizer_l2=5e-4, bias_regularizer_l2=5e-4),
+    Layer_Dense(1, 64),
+    Activation_ReLU(),
+    Layer_Dense(64, 64),
     Activation_ReLU(),
     Layer_Dense(64, 1),
-    Activation_Sigmoid(),
+    Activation_Linear(),
     ], 
-    Loss_BinaryCrossentropy(),
-    Optimizer_Adam(decay=5e-7),
-    Accuracy_Categorical(binary=True),
+    Loss_MeanSquaredError(),
+    Optimizer_Adam(learning_rate=0.005, decay=1e-3),
+    Accuracy_Regression(),
     )
 
 print(nn.optimizer)
+nn.accuracy.init(y)
 nn.test(np.array(X), np.array(y))
-
 for epoch, (batch, y_true_batch) in enumerate(zip(training_data, y_true_data)):
     if not epoch % 100:
         nn.train(X, y, print_data=True, epoch=epoch)
     else:
         nn.train(X, y)
 
-X_test, y_test = spiral_data(samples=100, classes=2)
+X_test, y_test = sine_data()
 
-y_test = y_test.reshape(-1,1)
+outputs = nn.test(np.array(X_test), np.array(y_test), return_outs=True)
 
-nn.test(np.array(X_test), np.array(y_test))
+plt.plot(X_test, y_test)
+plt.plot(X_test, outputs)
+
+plt.show()

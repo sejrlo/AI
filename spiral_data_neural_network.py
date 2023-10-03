@@ -25,7 +25,8 @@ nn = Neural_Network(
     Activation_Softmax(),
     ], 
     Loss_CategoricalCrossentropy(),
-    Optimizer_Adam(learning_rate=0.05, decay=5e-5)
+    Optimizer_Adam(learning_rate=0.05, decay=5e-5),
+    Accuracy_Categorical(),
     )
 
 print(nn.optimizer)
