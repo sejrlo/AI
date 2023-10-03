@@ -18,6 +18,10 @@ class Layer_Dropout:
     def backward(self, dvalues):
         self.dinputs = dvalues * self.binary_mask
 
+""" class Layer_Input:
+    def forward(self, inputs):
+        self.outputs = inputs
+ """
 class Layer_Dense:
     def __init__(self, n_inputs, n_neurons, weight_regularizer_l1=0, weight_regularizer_l2=0,
                 bias_regularizer_l1=0, bias_regularizer_l2=0):
@@ -427,7 +431,7 @@ class Neural_Network:
         
         self.loss_function.remember_trainable_layers(self.trainable_layers)
 
-    def run(self, input, training=False):
+    def forward(self, input, training=False):
         self.layers[0].forward(input)
         for i in range(1,len(self.layers)):
             if isinstance(self.layers[i], Layer_Dropout) and not training:
@@ -437,8 +441,17 @@ class Neural_Network:
         
         return self.layers[-1].output
 
+    def backward(self, output, y):
+        self.loss.backward(output, y)
+        output_gradient = self.loss_function.backward(output, y)
+
+        for layer in reversed(self.layers):
+            layer.backward(output_gradient)
+            output_gradient = layer.dinputs
+        
+
     def test(self, input, targets):
-        outputs = self.run(input)
+        outputs = self.forward(input)
 
         predictions = self.layers[-1].predictions(outputs)
         accuracy = np.mean(predictions == targets)
@@ -450,25 +463,24 @@ class Neural_Network:
         print("loss:", loss)
         print("acc:", accuracy)
     
-    def train(self, input, targets, print_data=False, epoch=None):
-        outputs = self.run(input, training=True)
-        if print_data:
+    def train(self, input, targets, *, epochs=1, print_every=0):
+        self.accuracy.init(targets)
+        for epoch in range(1, epochs+1):
+            outputs = self.forward(input, training=True)
+
             predictions = self.layers[-1].predictions(outputs)
             accuracy = np.mean(predictions == targets)
             data_loss, regularization_loss = self.calculate_loss(outputs, targets)
             loss = data_loss + regularization_loss
-            if not epoch is None:
-                print(f"epoch: {epoch}, acc: {accuracy:.3f}, loss: {loss:.3f} (data_loss: {data_loss:.3f}, regularization_loss: {regularization_loss:.3f}), lr: {self.optimizer.current_learning_rate}")
-            else:
-                print(f"acc: {accuracy:.3f}, loss: {loss:.3f} (data_loss: {data_loss:.3f}, regularization_loss: {regularization_loss:.3f}), lr: {self.optimizer.current_learning_rate}")
 
-        output_gradient = self.loss_function.backward(outputs, targets)
+            self.backward(outputs, targets)
+            
+            self.optimizer.optimize(self.trainable_layers)
 
-        for layer in reversed(self.layers):
-            layer.backward(output_gradient)
-            output_gradient = layer.dinputs
-        
-        self.optimizer.optimize(self.trainable_layers)
+            if print_every != 0:
+                if epoch % print_every:
+                    print(f"epoch: {epoch}, acc: {accuracy:.3f}, loss: {loss:.3f} (data_loss: {data_loss:.3f}, regularization_loss: {regularization_loss:.3f}), lr: {self.optimizer.current_learning_rate}")
+
 
     def calculate_loss(self, outputs, targets):
         if hasattr(self, "combined_loss_and_activation_function"):
