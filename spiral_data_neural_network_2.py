@@ -5,16 +5,10 @@ nnfs.init()
 
 X, y = spiral_data(samples=100, classes=2)
 y = y.reshape(-1,1)
-y_true_data = []
-training_data = []
-batch_size = 8
-epochs = 10001
 
-for i in range(epochs):   
-    training_data.append(np.array(X))
-    y_true_data.append(np.array(y))
+X_test, y_test = spiral_data(samples=100, classes=2)
 
-    
+y_test = y_test.reshape(-1,1)
 
 nn = Neural_Network(
     [
@@ -31,14 +25,5 @@ nn = Neural_Network(
 print(nn.optimizer)
 nn.test(np.array(X), np.array(y))
 
-for epoch, (batch, y_true_batch) in enumerate(zip(training_data, y_true_data)):
-    if not epoch % 100:
-        nn.train(X, y, print_data=True, epoch=epoch)
-    else:
-        nn.train(X, y)
+nn.train(X, y, validation_data=(X_test, y_test), epochs=10000, print_every=100)
 
-X_test, y_test = spiral_data(samples=100, classes=2)
-
-y_test = y_test.reshape(-1,1)
-
-nn.test(np.array(X_test), np.array(y_test))

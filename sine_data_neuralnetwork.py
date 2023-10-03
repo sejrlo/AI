@@ -34,11 +34,9 @@ nn = Neural_Network(
 print(nn.optimizer)
 nn.accuracy.init(y)
 nn.test(np.array(X), np.array(y))
-for epoch, (batch, y_true_batch) in enumerate(zip(training_data, y_true_data)):
-    if not epoch % 100:
-        nn.train(X, y, print_data=True, epoch=epoch)
-    else:
-        nn.train(X, y)
+
+nn.train(X, y, epochs=10000, print_every=100)
+
 
 X_test, y_test = sine_data()
 
