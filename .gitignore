@@ -2,3 +2,5 @@ magic_training_img/
 tmp/
 pic.jpg
 NNFS.pdf
+fashion_mnist_images/
+fashion_mnist_images.zip
