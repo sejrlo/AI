@@ -55,21 +55,8 @@ model.train(X, y, validation_data=(X_test, y_test), epochs=10, batch_size=128, p
 
 model.evaluate(X_test, y_test)
 
-model.save_parameters(model_path)
+model.save("fashion_mnist.model")
 
-model = Neural_Network(
-    [
-        Layer_Dense(X.shape[1], 128),
-        Activation_ReLU(),
-        Layer_Dense(128, 128),
-        Activation_ReLU(),
-        Layer_Dense(128, 10),
-        Activation_Softmax(),
-    ],
-    loss = Loss_CategoricalCrossentropy(),
-    accuracy = Accuracy_Categorical(),
-    )
-
-model.load_parameters(model_path)
+model = Neural_Network.load("fashion_mnist.model")
 
 model.evaluate(X_test, y_test)

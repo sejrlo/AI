@@ -6,6 +6,7 @@ from random import randint
 import os
 import cv2
 import pickle
+import copy
 
 # https://towardsdatascience.com/how-to-teach-an-ai-to-play-games-deep-reinforcement-learning-28f9b920440a
 
@@ -686,6 +687,29 @@ class Neural_Network:
     def load_parameters(self, path):
         with open(path, 'rb') as f:
             self.set_parameters(pickle.load(f))
+
+    def save(self, path):
+        model = copy.deepcopy(self)
+
+        model.loss.new_pass()
+        model.accuracy.new_pass()
+
+
+        model.loss.__dict__.pop('dinputs', None)
+
+        for layer in model.layers:
+            for property in ["inputs", "outputs", "dinputs", "dbiases", "dweights"]:
+                layer.__dict__.pop(property, None)
+
+        with open(path, "wb") as f:
+            pickle.dump(model, f)
+
+    @staticmethod
+    def load(path):
+        with open(path, "rb") as f:
+            model = pickle.load(f)
+        
+        return model
 
 def load_dataset(datasets, path):
     X = {}
