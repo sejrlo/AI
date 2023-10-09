@@ -32,6 +32,7 @@ class Layer_Dropout:
     def forward(self, inputs):
         self.outputs = inputs
  """
+
 class Layer_Dense:
     def __init__(self, n_inputs, n_neurons, weight_regularizer_l1=0, weight_regularizer_l2=0,
                 bias_regularizer_l1=0, bias_regularizer_l2=0):
@@ -667,6 +668,27 @@ class Neural_Network:
         validation_loss = self.loss.calculate_accumulated()
         validation_accuracy = self.accuracy.calculate_accumulated()
         print(f'validation, acc: {validation_accuracy:.3f}, loss: {validation_loss:.3f}')
+
+    def predict(self, X, *, batch_size=None):
+        prediction_steps = 1
+        if batch_size is not None:
+            prediction_steps = len(X) // batch_size
+            if prediction_steps * batch_size < len(X):
+                prediction_steps += 1
+        output = []
+
+        for step in range(prediction_steps):
+            if batch_size is None:
+                batch_X = X
+
+            else:
+                batch_X = X[step * batch_size:(step+1)*batch_size]
+            
+            batch_output = self.forward(batch_X, training=False)
+
+            output.append(batch_output)
+        
+        return self.layers[-1].predictions(np.vstack(output))
 
     def set_parameters(self, parameters):
         for parameter_set, layer in zip(parameters, self.trainable_layers):
