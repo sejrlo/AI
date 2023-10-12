@@ -4,13 +4,14 @@ from random import choice as choose
 
 
 # pygame setup
-pg.init()
-screen = pg.display.set_mode((1280, 720))
-clock = pg.time.Clock()
-running = True
-dt = 0
+if __name__ == "__main__":
+    pg.init()
 
-player_pos = pg.Vector2(screen.get_width() / 2, screen.get_height() / 2)
+    screen = pg.display.set_mode((1280, 720))
+    clock = pg.time.Clock()
+    dt = 0
+running = True
+
 r = 40
 mouseDown = False
 
@@ -112,6 +113,7 @@ class Board():
                 print(self.resolved, "won")
                 global running
                 running = False
+                return self.resolved
 
     def child_resolved(self, _child):
         for i in range(len(self.children)):
@@ -128,63 +130,94 @@ class Board():
                     if mouse_pos[0] > self.boardstart[0] + x*self.space_size and mouse_pos[0] < self.boardstart[0] + x*self.space_size + self.space_size:
                         for y in range(3):
                             if mouse_pos[1] > self.boardstart[1] + y*self.space_size and mouse_pos[1] < self.boardstart[1] + y*self.space_size + self.space_size:
-                                global turn
-                                if self.spaces[3*x+y] is None:
-                                    self.spaces[3*x+y] = turn
-                                    self.check_if_resolved()
-                                    turn = "O" if turn == "X" else "X"
-                                    last_space_index = 3*x+y
+                                self.place_piece_on_board(3*x+y)
+                                
 
         if self.children:
             for i, child in enumerate(self.children):
                 if i == last_space_index or last_space_index is None or self.children[last_space_index].resolved != "not":
                     child.check_if_clicked(mouse_pos)
-        
+    
+    def place_piece_on_board(self, i):
+        if self.children != []:
+            return self.children[i//9].place_piece_on_board(i%9)
+            
+        else:
+            global turn
+            if self.spaces[i] is None:
+                self.spaces[i] = turn
+                self.check_if_resolved()
+                turn = "O" if turn == "X" else "X"
+                last_space_index = i
+                return True
+            
+            return False
+
+    def get_board_stat(self):
+        global turn
+        spaces = []
+        if self.children != []:
+            for child in self.children:
+                spaces.extend(child.get_board_stat())
+            
+            return spaces
+
+        else:
+            for space in self.spaces:
+                if space == turn: spaces.append(1)
+                elif space != turn: spaces.append(-1)
+                else: spaces.append(0)
+            return spaces
+
+
+
 board = Board(boardstart, _space_size, "black", has_children=True, is_clickable=False)
 
+if __name__ == "__main__":
 
-while running:
-    try:
-        # poll for events
-        # pygame.QUIT event means the user clicked X to close your window
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                running = False
+    print("hej")
+    while running:
+        try:
+            # poll for events
+            # pygame.QUIT event means the user clicked X to close your window
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    running = False
 
-        # fill the screen with a color to wipe away anything from last frame
-        screen.fill("white")
+            # fill the screen with a color to wipe away anything from last frame
+            screen.fill("white")
 
-        #pg.draw.circle(screen, "red", player_pos, r)
+            #pg.draw.circle(screen, "red", player_pos, r)
 
-        #pg.draw.rect(screen, "red", (10,10,200,200), width=1)
+            #pg.draw.rect(screen, "red", (10,10,200,200), width=1)
 
-        board.draw()
-        if turn == "X":
-            #draw X
-            pg.draw.line(screen, "purple", (30, 30), (100, 100))
-            pg.draw.line(screen, "purple", (30, 100), (100, 30))
-            
-        else: 
-            #draw O
-            pg.draw.circle(screen, "purple", (65, 65), 35, width=1)
+            board.draw()
+            if turn == "X":
+                #draw X
+                pg.draw.line(screen, "purple", (30, 30), (100, 100))
+                pg.draw.line(screen, "purple", (30, 100), (100, 30))
+                
+            else: 
+                #draw O
+                pg.draw.circle(screen, "purple", (65, 65), 35, width=1)
 
-        if mouse.get_pressed()[0]: 
-            if not mouseDown:  
-                mouseDown = True
-                mouse_pos = mouse.get_pos()
-                board.check_if_clicked(mouse_pos)
-        else: 
-            mouseDown = False
+            if mouse.get_pressed()[0]: 
+                if not mouseDown:  
+                    mouseDown = True
+                    mouse_pos = mouse.get_pos()
+                    board.check_if_clicked(mouse_pos)
+            else: 
+                mouseDown = False
 
-        # flip() the display to put your work on screen
-        pg.display.flip()
+            # flip() the display to put your work on screen
+            pg.display.flip()
 
-        # limits FPS to 60
-        # dt is delta time in seconds since last frame, used for framerate-
-        # independent physics.
-        dt = clock.tick(60) / 1000
-    except KeyboardInterrupt:
-        break
+            # limits FPS to 60
+            # dt is delta time in seconds since last frame, used for framerate-
+            # independent physics.
+            dt = clock.tick(60) / 1000
+        except KeyboardInterrupt:
+            break
 
 
-pg.quit()
+    pg.quit()

@@ -7,7 +7,7 @@ import os
 import cv2
 import pickle
 import copy
-
+# https://online.york.ac.uk/what-is-reinforcement-learning/
 # https://towardsdatascience.com/how-to-teach-an-ai-to-play-games-deep-reinforcement-learning-28f9b920440a
 
 class Layer_Dropout:
@@ -687,8 +687,8 @@ class Neural_Network:
             batch_output = self.forward(batch_X, training=False)
 
             output.append(batch_output)
-        
-        return self.layers[-1].predictions(np.vstack(output))
+        self.output = np.vstack(output)
+        return self.layers[-1].predictions(self.output)
 
     def set_parameters(self, parameters):
         for parameter_set, layer in zip(parameters, self.trainable_layers):

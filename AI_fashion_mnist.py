@@ -29,3 +29,4 @@ predictions = model.predict(X)
 
 for prediction in predictions:
     print(fashion_mnist_labels[prediction])
+
