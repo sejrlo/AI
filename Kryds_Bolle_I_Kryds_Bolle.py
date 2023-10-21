@@ -140,7 +140,8 @@ class Board():
     
     def place_piece_on_board(self, i):
         if self.children != []:
-            return self.children[i//9].place_piece_on_board(i%9)
+            if i//9 == last_space_index or last_space_index is None or self.children[last_space_index].resolved != "not":
+                return self.children[i//9].place_piece_on_board(i%9)
             
         else:
             global turn
